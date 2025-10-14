@@ -39,6 +39,7 @@ install(TARGETS
 # Install the existing Python node
 install(PROGRAMS
   src/read_write_node.py
+  src/rotate_motor_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
