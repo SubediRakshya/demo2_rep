@@ -66,6 +66,17 @@ def main():
         print("Failed to set baudrate")
         return
 
+    # Disable torque before changing mode
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_TORQUE_ENABLE, TORQUE_DISABLE)
+    if dxl_comm_result != COMM_SUCCESS:
+        print(packetHandler.getTxRxResult(dxl_comm_result))
+        return
+    elif dxl_error != 0:
+        print(packetHandler.getRxPacketError(dxl_error))
+        return
+    else:
+        print("Torque disabled for mode change")
+
     # Set Operating Mode to Velocity Control
     dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_OPERATING_MODE, VELOCITY_MODE)
     if dxl_comm_result != COMM_SUCCESS:
@@ -77,7 +88,8 @@ def main():
     else:
         print("Operating mode set to Velocity Control")
 
-    # Enable torque    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_TORQUE_ENABLE, TORQUE_ENABLE)
+    # Enable torque
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_TORQUE_ENABLE, TORQUE_ENABLE)
     if dxl_comm_result != COMM_SUCCESS:
         print(packetHandler.getTxRxResult(dxl_comm_result))
         return
