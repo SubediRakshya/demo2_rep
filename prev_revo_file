@@ -1,4 +1,4 @@
-/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from dynamixel_sdk import *  # Uses Dynamixel SDK library
@@ -38,206 +38,7 @@ DEVICENAME = '/dev/ttyUSB0'  # Port name
 
 TORQUE_ENABLE = 1
 TORQUE_DISABLE = 0
-/usr/bin/env python
-# -*- coding: utf-8 -*-
 
-from dynamixel_sdk import *  # Uses Dynamixel SDK library
-import time
-import os
-
-# Cross-platform getch for key input
-if os.name == 'nt':
-    import msvcrt
-    def getch():
-        return msvcrt.getch().decode()
-else:
-    import sys, tty, termios
-    def getch():
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-
-# Control table addresses for XM430-W350
-ADDR_OPERATING_MODE     = 11
-ADDR_TORQUE_ENABLE      = 64
-ADDR_GOAL_VELOCITY      = 104
-ADDR_PRESENT_POSITION   = 132
-
-# Protocol version
-PROTOCOL_VERSION = 2.0
-
-# Default settings
-DXL_ID = 1                # Dynamixel ID
-BAUDRATE = 57600        # Dynamixel default baudrate
-DEVICENAME = '/dev/ttyUSB0'  # Port name
-
-TORQUE_ENABLE = 1
-TORQUE_DISABLE = 0
-/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-from dynamixel_sdk import *  # Uses Dynamixel SDK library
-import time
-import os
-
-# Cross-platform getch for key input
-if os.name == 'nt':
-    import msvcrt
-    def getch():
-        return msvcrt.getch().decode()
-else:
-    import sys, tty, termios
-    def getch():
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-
-# Control table addresses for XM430-W350
-ADDR_OPERATING_MODE     = 11
-ADDR_TORQUE_ENABLE      = 64
-ADDR_GOAL_VELOCITY      = 104
-ADDR_PRESENT_POSITION   = 132
-
-# Protocol version
-PROTOCOL_VERSION = 2.0
-
-# Default settings
-DXL_ID = 1                # Dynamixel ID
-BAUDRATE = 57600        # Dynamixel default baudrate
-DEVICENAME = '/dev/ttyUSB0'  # Port name
-
-TORQUE_ENABLE = 1
-TORQUE_DISABLE = 0
-/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-from dynamixel_sdk import *  # Uses Dynamixel SDK library
-import time
-import os
-
-# Cross-platform getch for key input
-if os.name == 'nt':
-    import msvcrt
-    def getch():
-        return msvcrt.getch().decode()
-else:
-    import sys, tty, termios
-    def getch():
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-
-# Control table addresses for XM430-W350
-ADDR_OPERATING_MODE     = 11
-ADDR_TORQUE_ENABLE      = 64
-ADDR_GOAL_VELOCITY      = 104
-ADDR_PRESENT_POSITION   = 132
-
-# Protocol version
-PROTOCOL_VERSION = 2.0
-
-# Default settings
-DXL_ID = 1                # Dynamixel ID
-BAUDRATE = 57600        # Dynamixel default baudrate
-DEVICENAME = '/dev/ttyUSB0'  # Port name
-
-TORQUE_ENABLE = 1
-TORQUE_DISABLE = 0
-/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-from dynamixel_sdk import *  # Uses Dynamixel SDK library
-import time
-import os
-
-# Cross-platform getch for key input
-if os.name == 'nt':
-    import msvcrt
-    def getch():
-        return msvcrt.getch().decode()
-else:
-    import sys, tty, termios
-    def getch():
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-
-# Control table addresses for XM430-W350VELOCITY_MODE = 1          # Velocity control mode
-
-# Velocity to RPM conversion factor for XM430: 0.229 RPM per unit velocity
-VELOCITY_TO_RPM = 0.229
-
-# Number of revolutions you want the motor to spin in each direction
-NUM_REVOLUTIONS = 5
-
-# Speed to use (velocity units)
-VELOCITY_VALUE = 200   # Try 200; adjust as needed (max ~1023)
-
-# Function to calculate time needed for given revolutions at given velocity
-def calculate_rev_time(num_revs, velocity):
-    rpm = velocity * VELOCITY_TO_RPM
-    return (60 * num_revs) / rpm
-
-def main():
-    portHandler = PortHandler(DEVICENAME)
-    packetHandler = PacketHandler(PROTOCOL_VERSION)
-
-    if not portHandler.openPort():
-        print("Failed to open port")
-        return
-    if not portHandler.setBaudRate(BAUDRATE):
-        print("Failed to set baudrate")
-        return
-
-    # Set Operating Mode to Velocity Control
-    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_OPERATING_MODE, VELOCITY_MODE)
-    if dxl_comm_result != COMM_SUCCESS:
-        print(packetHandler.getTxRxResult(dxl_comm_result))
-        return
-    elif dxl_error != 0:
-        print(packetHandler.getRxPacketError(dxl_error))
-        return
-    else:
-        print("Operating mode set to Velocity Control")
-
-    # Enable torque    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_TORQUE_ENABLE, TORQUE_ENABLE)
-    if dxl_comm_result != COMM_SUCCESS:
-
-ADDR_OPERATING_MODE     = 11
-ADDR_TORQUE_ENABLE      = 64
-ADDR_GOAL_VELOCITY      = 104
-ADDR_PRESENT_POSITION   = 132
-
-# Protocol version
-PROTOCOL_VERSION = 2.0
-
-# Default settings
-DXL_ID = 1                # Dynamixel ID
-BAUDRATE = 57600        # Dynamixel default baudrate
-DEVICENAME = '/dev/ttyUSB0'  # Port name
-
-TORQUE_ENABLE = 1
-TORQUE_DISABLE = 0
 VELOCITY_MODE = 1          # Velocity control mode
 
 # Velocity to RPM conversion factor for XM430: 0.229 RPM per unit velocity
@@ -278,7 +79,19 @@ def main():
 
     # Enable torque    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_TORQUE_ENABLE, TORQUE_ENABLE)
     if dxl_comm_result != COMM_SUCCESS:
-hile True:
+        print(packetHandler.getTxRxResult(dxl_comm_result))
+        return
+    elif dxl_error != 0:
+        print(packetHandler.getRxPacketError(dxl_error))
+        return
+    else:
+        print("Torque enabled")
+
+    rev_time = calculate_rev_time(NUM_REVOLUTIONS, VELOCITY_VALUE)
+    print(f"Motor will spin {NUM_REVOLUTIONS} revolutions each way at approx {VELOCITY_VALUE * VELOCITY_TO_RPM:.2f} RPM")
+    print(f"Estimated time per direction: {rev_time:.2f} seconds")
+
+    while True:
         print("Press any key to spin motor (ESC to quit)")
         c = getch()
         if c == chr(0x1b):  # ESC key
@@ -316,7 +129,6 @@ hile True:
 
         # Stop motor
         print("Stopping motor...")
-print("Stopping motor...")
         dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(portHandler, DXL_ID, ADDR_GOAL_VELOCITY, 0)
         time.sleep(0.5)
 
