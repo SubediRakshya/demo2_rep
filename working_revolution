@@ -1,0 +1,149 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from dynamixel_sdk import *  # Uses Dynamixel SDK library
+import time
+import os
+
+# Cross-platform getch for key input
+if os.name == 'nt':
+    import msvcrt
+    def getch():
+        return msvcrt.getch().decode()
+else:
+    import sys, tty, termios
+    def getch():
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
+# Control table addresses for XM430-W350
+ADDR_OPERATING_MODE     = 11
+ADDR_TORQUE_ENABLE      = 64
+ADDR_GOAL_VELOCITY      = 104
+ADDR_PRESENT_POSITION   = 132
+
+# Protocol version
+PROTOCOL_VERSION = 2.0
+
+# Default settings
+DXL_ID = 1
+BAUDRATE = 57600
+DEVICENAME = '/dev/ttyUSB0'
+
+TORQUE_ENABLE = 1
+TORQUE_DISABLE = 0
+VELOCITY_MODE = 1
+
+# Velocity to RPM conversion factor
+VELOCITY_TO_RPM = 0.229
+
+# User-defined motor behavior
+NUM_REVOLUTIONS = 5
+VELOCITY_VALUE = 200  # Units (0–1023)
+
+def calculate_rev_time(num_revs, velocity):
+    rpm = velocity * VELOCITY_TO_RPM
+    return (60 * num_revs) / rpm
+
+def main():
+    portHandler = PortHandler(DEVICENAME)
+    packetHandler = PacketHandler(PROTOCOL_VERSION)
+
+    # Open port
+    if not portHandler.openPort():
+        print("Failed to open port")
+        return
+    if not portHandler.setBaudRate(BAUDRATE):
+        print("Failed to set baudrate")
+        return
+
+    # Set to Velocity Control Mode
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(
+        portHandler, DXL_ID, ADDR_OPERATING_MODE, VELOCITY_MODE)
+    if dxl_comm_result != COMM_SUCCESS:
+        print(packetHandler.getTxRxResult(dxl_comm_result))
+        return
+    elif dxl_error != 0:
+        print(packetHandler.getRxPacketError(dxl_error))
+        return
+    else:
+        print("Operating mode set to Velocity Control")
+
+    # Enable torque
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(
+        portHandler, DXL_ID, ADDR_TORQUE_ENABLE, TORQUE_ENABLE)
+    if dxl_comm_result != COMM_SUCCESS:
+        print(packetHandler.getTxRxResult(dxl_comm_result))
+        return
+    elif dxl_error != 0:
+        print(packetHandler.getRxPacketError(dxl_error))
+        return
+    else:
+        print("Torque enabled")
+
+    # Calculate time for motor to run based on desired revolutions
+    rev_time = calculate_rev_time(NUM_REVOLUTIONS, VELOCITY_VALUE)
+
+    while True:
+        print("Press any key to spin motor (ESC to quit)")
+        c = getch()
+        if c == chr(0x1b):  # ESC key
+            break
+
+        # Spin CCW (positive velocity)
+        print("Spinning CCW...")
+        dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(
+            portHandler, DXL_ID, ADDR_GOAL_VELOCITY, VELOCITY_VALUE)
+        if dxl_comm_result != COMM_SUCCESS:
+            print(packetHandler.getTxRxResult(dxl_comm_result))
+            break
+        elif dxl_error != 0:
+            print(packetHandler.getRxPacketError(dxl_error))
+            break
+
+        time.sleep(rev_time)
+
+        # Stop before reversing
+        packetHandler.write4ByteTxRx(portHandler, DXL_ID, ADDR_GOAL_VELOCITY, 0)
+        time.sleep(0.5)
+
+        # Spin CW (negative velocity)
+        print("Spinning CW...")
+        neg_velocity = (1 << 32) - VELOCITY_VALUE  # 2's complement for negative
+        dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(
+            portHandler, DXL_ID, ADDR_GOAL_VELOCITY, neg_velocity)
+        if dxl_comm_result != COMM_SUCCESS:
+            print(packetHandler.getTxRxResult(dxl_comm_result))
+            break
+        elif dxl_error != 0:
+            print(packetHandler.getRxPacketError(dxl_error))
+            break
+
+        time.sleep(rev_time)
+
+        # Stop motor
+        print("Stopping motor...")
+        packetHandler.write4ByteTxRx(portHandler, DXL_ID, ADDR_GOAL_VELOCITY, 0)
+        time.sleep(0.5)
+
+    # Disable torque
+    dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(
+        portHandler, DXL_ID, ADDR_TORQUE_ENABLE, TORQUE_DISABLE)
+    if dxl_comm_result != COMM_SUCCESS:
+        print(packetHandler.getTxRxResult(dxl_comm_result))
+    elif dxl_error != 0:
+        print(packetHandler.getRxPacketError(dxl_error))
+    else:
+        print("Torque disabled")
+
+    portHandler.closePort()
+    print("Port closed")
+
+if __name__ == '__main__':
+    main()
