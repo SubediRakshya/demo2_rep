@@ -47,7 +47,7 @@ VELOCITY_TO_RPM = 0.229
 class RotateMotorNode(Node):
 
     def __init__(self):
-        super().__init__('continuous_rotation_node')
+        super().__init__('rotate_motor_node')
         self.port_handler = PortHandler(DEVICE_NAME)
         self.packet_handler = PacketHandler(PROTOCOL_VERSION)
 
@@ -112,7 +112,7 @@ class RotateMotorNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = ContinuousRotationNode()
+    node = RotateMotorNode()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
