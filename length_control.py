@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from dynamixel_sdk import *
+import time
 
 # Control Table Addresses
 ADDR_TORQUE_ENABLE = 64
@@ -12,7 +13,7 @@ ADDR_OPERATING_MODE = 11
 PROTOCOL_VERSION = 2.0
 BAUDRATE = 57600
 DEVICENAME = '/dev/ttyUSB0'
-#I wrote something so it is easier to commit
+
 TORQUE_ENABLE = 1
 TORQUE_DISABLE = 0
 EXTENDED_POSITION_MODE = 4
@@ -48,12 +49,11 @@ for dxl_id in dxl_ids:
 
 print("Torque enabled for all motors")
 
+
 def move_motors(L_des_cm):
     """
-    Move motors based on desired linear displacements (cm).
-
-    Parameters:
-        L_des_cm: list or tuple of 3 floats [L0, L1, L2]
+    Move motors sequentially based on desired linear displacements (cm),
+    with 1 second delay between each movement.
     """
     assert len(L_des_cm) == 3, "Input must be a list of three lengths"
 
@@ -64,7 +64,7 @@ def move_motors(L_des_cm):
         present_positions[dxl_id] = pos
         print(f"Motor {dxl_id} start position: {pos}")
 
-    # Convert length to revolutions
+    # Convert cm to revolutions
     def cm_to_revolutions(cm):
         return cm / cm_per_rev
 
@@ -75,36 +75,38 @@ def move_motors(L_des_cm):
     for i, dxl_id in enumerate(dxl_ids):
         goal_positions[dxl_id] = int(present_positions[dxl_id] + revs[i] * REVOLUTION_COUNT)
 
-    # GroupSyncWrite for simultaneous motion
-    groupSyncWrite = GroupSyncWrite(portHandler, packetHandler, ADDR_GOAL_POSITION, 4)
-    for dxl_id, goal in goal_positions.items():
-        param_goal = [
-            DXL_LOBYTE(DXL_LOWORD(goal)),
-            DXL_HIBYTE(DXL_LOWORD(goal)),
-            DXL_LOBYTE(DXL_HIWORD(goal)),
-            DXL_HIBYTE(DXL_HIWORD(goal))
-        ]
-        groupSyncWrite.addParam(dxl_id, param_goal)
-
-    groupSyncWrite.txPacket()
-    groupSyncWrite.clearParam()
-
-    print("Motors moving...")
-
-    # Wait until all motors reach goal
+    # Move motors one by one
     threshold = 20
-    while True:
-        all_reached = True
-        for dxl_id, goal in goal_positions.items():
+    for i, dxl_id in enumerate(dxl_ids):
+        goal = goal_positions[dxl_id]
+
+        # Send goal to motor
+        dxl_comm_result, dxl_error = packetHandler.write4ByteTxRx(
+            portHandler, dxl_id, ADDR_GOAL_POSITION, goal)
+        if dxl_comm_result != COMM_SUCCESS:
+            print(f"Motor {dxl_id} TxRx error: {packetHandler.getTxRxResult(dxl_comm_result)}")
+        elif dxl_error != 0:
+            print(f"Motor {dxl_id} error: {packetHandler.getRxPacketError(dxl_error)}")
+
+        print(f"Motor {dxl_id} moving to goal position {goal}...")
+
+        # Wait for motor to reach goal
+        while True:
             pos, _, _ = packetHandler.read4ByteTxRx(portHandler, dxl_id, ADDR_PRESENT_POSITION)
             diff = abs(goal - pos)
-            print(f"Motor {dxl_id} | Current: {pos} | Goal: {goal} | dif={diff}")
-            if diff > threshold:
-                all_reached = False
-        if all_reached:
-            break
+            print(f"Motor {dxl_id} | Current: {pos} | Goal: {goal} | diff={diff}")
+            if diff <= threshold:
+                print(f"Motor {dxl_id} reached goal.\n")
+                break
+            time.sleep(0.1)
 
-    print("All motors reached their goal\n")
+        # Wait 1 second before moving next motor
+        if i < len(dxl_ids) - 1:
+            print("Waiting 1 second before next motor...\n")
+            time.sleep(1)
+
+    print("All motors completed movement.\n")
+
 
 if __name__ == "__main__":
     # Example desired movements in cm (relative)
