@@ -1,75 +1,104 @@
+#!/usr/bin/env python3
+
+from dynamixel_sdk import *
 import rclpy
 from rclpy.node import Node
-from dynamixel_sdk_custom_interfaces.msg import SetPosition
-from dynamixel_sdk_custom_interfaces.srv import GetPosition
 import time
 
-class RotateMotorNode(Node):
+# Control table addresses for XM430-W350
+ADDR_OPERATING_MODE = 11
+ADDR_TORQUE_ENABLE = 64
+ADDR_GOAL_VELOCITY = 104
+ADDR_PRESENT_POSITION = 132
+
+# Protocol version
+PROTOCOL_VERSION = 2.0
+
+# Default settings
+DXL_ID = 1
+BAUDRATE = 57600
+DEVICE_NAME = '/dev/ttyUSB0'
+
+TORQUE_ENABLE = 1
+TORQUE_DISABLE = 0
+VELOCITY_MODE = 1
+
+# Conversion constants
+VELOCITY_TO_RPM = 0.229
+
+class ContinuousRotationNode(Node):
+
     def __init__(self):
-        super().__init__('rotate_motor_node')
+        super().__init__('continuous_rotation_node')
+        self.port_handler = PortHandler(DEVICE_NAME)
+        self.packet_handler = PacketHandler(PROTOCOL_VERSION)
 
-        # Publisher to send position commands
-        self.publisher_ = self.create_publisher(SetPosition, '/set_position', 10)
+        if not self.port_handler.openPort():
+            self.get_logger().error('Failed to open port.')
+            return
+        if not self.port_handler.setBaudRate(BAUDRATE):
+            self.get_logger().error('Failed to set baudrate.')
+            return
 
-        # Service client to check position (optional)
-        self.cli = self.create_client(GetPosition, '/get_position')
-        while not self.cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Waiting for /get_position service...')
+        # Set velocity control mode
+        self.packet_handler.write1ByteTxRx(
+            self.port_handler, DXL_ID, ADDR_OPERATING_MODE, VELOCITY_MODE)
+        self.packet_handler.write1ByteTxRx(
+            self.port_handler, DXL_ID, ADDR_TORQUE_ENABLE, TORQUE_ENABLE)
+
+        self.get_logger().info('Motor ready for continuous rotation.')
 
         # Parameters
-        self.declare_parameter('motor_id', 1)
-        self.declare_parameter('n_cycles', 3)
-        self.declare_parameter('cw_position', 1023)
-        self.declare_parameter('ccw_position', 3072)
-        self.declare_parameter('pause_sec', 1.0)
+        self.num_revolutions = 3
+        self.velocity_value = 200  # control speed
 
-        self.motor_id = self.get_parameter('motor_id').value
-        self.n_cycles = self.get_parameter('n_cycles').value
-        self.cw_position = self.get_parameter('cw_position').value
-        self.ccw_position = self.get_parameter('ccw_position').value
-        self.pause_sec = self.get_parameter('pause_sec').value
+        self.spin_timer = self.create_timer(1.0, self.spin_motor_once)
 
-        self.get_logger().info(f'Rotating motor {self.motor_id} for {self.n_cycles} cycles...')
-        self.run_rotation_sequence()
+    def calculate_rev_time(self, num_revs, velocity):
+        rpm = velocity * VELOCITY_TO_RPM
+        return (60 * num_revs) / rpm
 
-    def send_position(self, position):
-        msg = SetPosition()
-        msg.id = self.motor_id
-        msg.position = position
-        self.publisher_.publish(msg)
-        self.get_logger().info(f'Published position {position}')
+    def spin_motor_once(self):
+        rev_time = self.calculate_rev_time(self.num_revolutions, self.velocity_value)
 
-    def get_position(self):
-        req = GetPosition.Request()
-        req.id = self.motor_id
-        future = self.cli.call_async(req)
-        rclpy.spin_until_future_complete(self, future)
-        if future.result() is not None:
-            pos = future.result().position
-            self.get_logger().info(f'Current position: {pos}')
-        else:
-            self.get_logger().error('Service call failed')
+        # Spin CCW
+        self.get_logger().info('Spinning CCW...')
+        self.packet_handler.write4ByteTxRx(
+            self.port_handler, DXL_ID, ADDR_GOAL_VELOCITY, self.velocity_value)
+        time.sleep(rev_time)
 
-    def run_rotation_sequence(self):
-        for i in range(self.n_cycles):
-            self.get_logger().info(f'Cycle {i+1}/{self.n_cycles}: Clockwise')
-            self.send_position(self.cw_position)
-            time.sleep(self.pause_sec)
+        # Stop
+        self.packet_handler.write4ByteTxRx(
+            self.port_handler, DXL_ID, ADDR_GOAL_VELOCITY, 0)
+        time.sleep(0.5)
 
-            self.get_logger().info(f'Cycle {i+1}/{self.n_cycles}: Counterclockwise')
-            self.send_position(self.ccw_position)
-            time.sleep(self.pause_sec)
+        # Spin CW
+        self.get_logger().info('Spinning CW...')
+        neg_velocity = (1 << 32) - self.velocity_value
+        self.packet_handler.write4ByteTxRx(
+            self.port_handler, DXL_ID, ADDR_GOAL_VELOCITY, neg_velocity)
+        time.sleep(rev_time)
 
-            # Optional check
-            self.get_position()
+        # Stop
+        self.get_logger().info('Stopping motor...')
+        self.packet_handler.write4ByteTxRx(
+            self.port_handler, DXL_ID, ADDR_GOAL_VELOCITY, 0)
+        time.sleep(0.5)
 
-        self.get_logger().info('Rotation sequence complete.')
+    def destroy_node(self):
+        self.packet_handler.write1ByteTxRx(
+            self.port_handler, DXL_ID, ADDR_TORQUE_ENABLE, TORQUE_DISABLE)
+        self.port_handler.closePort()
+        super().destroy_node()
+
 
 def main(args=None):
     rclpy.init(args=args)
-    node = RotateMotorNode()
+    node = ContinuousRotationNode()
+    rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()
