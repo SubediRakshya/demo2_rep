@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 
-from dynamixel_sdk import COMM_SUCCESS, PacketHandler, PortHandler
-from dynamixel_sdk_custom_interfaces.msg import SetPosition
-from dynamixel_sdk_custom_interfaces.srv import GetPosition
-import rclpy
-from rclpy.node import Node
-from rclpy.qos import QoSProfile
 import time
+import rclpy
+from rclpy.node import Node # for node
+from dynamixel_sdk import * # to run dynamixel like porthandler and packethandler 
+from dynamixel_sdk import COMM_SUCCESS     #extended version of what we did in line 6
+from dynamixel_sdk import PacketHandler
+from dynamixel_sdk import PortHandler
 
-# Control table addresses for XM430-W350
+from rclpy.qos import QoSProfile
+
+# control table addresses
 ADDR_OPERATING_MODE = 11
 ADDR_TORQUE_ENABLE = 64
-ADDR_GOAL_VELOCITY = 104
+ADDR_GOAL_POSITION = 116
 ADDR_PRESENT_POSITION = 132
 
-# Protocol and default configuration
+# Protocol and default configuration for one motor
 PROTOCOL_VERSION = 2.0
 DXL_ID = 1
 BAUDRATE = 57600
@@ -22,24 +24,19 @@ DEVICE_NAME = '/dev/ttyUSB0'
 
 TORQUE_ENABLE = 1
 TORQUE_DISABLE = 0
-VELOCITY_MODE = 1
+POSITION_MODE = 3  # position control mode
 
-# Conversion constant: Dynamixel velocity unit to RPM
-VELOCITY_TO_RPM = 0.229
+#  Position limits (0–4095 corresponds to 0–360°)
+POS_CENTER = 2048
+POS_LEFT = POS_CENTER - 1024
+POS_RIGHT = POS_CENTER + 1024
+
 
 class RotateMotorNode(Node):
     def __init__(self):
         super().__init__('rotate_motor_node')
 
-        # ROS 2 publisher to send position commands (optional if using velocity mode only)
-        self.publisher_ = self.create_publisher(SetPosition, '/set_position', QoSProfile(depth=10))
-
-        # ROS 2 service client to read position (optional)
-        self.cli = self.create_client(GetPosition, '/get_position')
-        while not self.cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Waiting for /get_position service...')
-
-        # Initialize Dynamixel
+        # Initialize SDK handlers
         self.port_handler = PortHandler(DEVICE_NAME)
         self.packet_handler = PacketHandler(PROTOCOL_VERSION)
 
@@ -50,49 +47,33 @@ class RotateMotorNode(Node):
             self.get_logger().error('Failed to set baudrate.')
             return
 
-        # Set velocity control mode and enable torque
-        self.packet_handler.write1ByteTxRx(self.port_handler, DXL_ID, ADDR_OPERATING_MODE, VELOCITY_MODE)
+        # Set to position control mode
+        self.packet_handler.write1ByteTxRx(self.port_handler, DXL_ID, ADDR_OPERATING_MODE, POSITION_MODE)
+
+        # Enable torque
         self.packet_handler.write1ByteTxRx(self.port_handler, DXL_ID, ADDR_TORQUE_ENABLE, TORQUE_ENABLE)
-        self.get_logger().info('Motor ready for continuous rotation.')
+        self.get_logger().info('Motor ready in position control mode.')
 
-        # Parameters: number of revolutions per direction and velocity
-        self.num_revolutions = 3
-        self.velocity_value = 200  # Dynamixel velocity units
+        # Motion sequence
+        self.positions = [POS_LEFT, POS_RIGHT, POS_CENTER]
+        self.current_index = 0
 
-        # Start a timer to spin motor continuously
-        self.spin_timer = self.create_timer(1.0, self.spin_motor_once)
+        # Run motor every 3 seconds
+        self.timer = self.create_timer(3.0, self.move_motor_once)
+    # this is the function to move the motor
+    def move_motor_once(self):
+        # Move motor between preset positions left, right and center in this case
+        goal_position = self.positions[self.current_index]  # these come from the already set positions that we defined already
+        self.get_logger().info(f'Moving to position: {goal_position}')
+        
+        self.packet_handler.write4ByteTxRx(self.port_handler, DXL_ID, ADDR_GOAL_POSITION, goal_position)
+        time.sleep(2.0)
 
-    def calculate_rev_time(self, num_revs, velocity):
-        """Calculate time in seconds for the motor to complete num_revs at given velocity."""
-        rpm = velocity * VELOCITY_TO_RPM
-        return (60 * num_revs) / rpm
-
-    def spin_motor_once(self):
-        """Spin the motor clockwise and counterclockwise once."""
-        rev_time = self.calculate_rev_time(self.num_revolutions, self.velocity_value)
-
-        # Spin CCW
-        self.get_logger().info('Spinning CCW...')
-        self.packet_handler.write4ByteTxRx(self.port_handler, DXL_ID, ADDR_GOAL_VELOCITY, self.velocity_value)
-        time.sleep(rev_time)
-
-        # Stop
-        self.packet_handler.write4ByteTxRx(self.port_handler, DXL_ID, ADDR_GOAL_VELOCITY, 0)
-        time.sleep(0.5)
-
-        # Spin CW
-        self.get_logger().info('Spinning CW...')
-        neg_velocity = (1 << 32) - self.velocity_value  # 2's complement for negative
-        self.packet_handler.write4ByteTxRx(self.port_handler, DXL_ID, ADDR_GOAL_VELOCITY, neg_velocity)
-        time.sleep(rev_time)
-
-        # Stop
-        self.get_logger().info('Stopping motor...')
-        self.packet_handler.write4ByteTxRx(self.port_handler, DXL_ID, ADDR_GOAL_VELOCITY, 0)
-        time.sleep(0.5)
+        # Update to next target position
+        self.current_index = (self.current_index + 1) % len(self.positions)
 
     def destroy_node(self):
-        """Disable torque and close port when node is destroyed."""
+        """Disable torque and close port on shutdown."""
         self.packet_handler.write1ByteTxRx(self.port_handler, DXL_ID, ADDR_TORQUE_ENABLE, TORQUE_DISABLE)
         self.port_handler.closePort()
         super().destroy_node()
@@ -101,9 +82,13 @@ class RotateMotorNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = RotateMotorNode()
-    rclpy.spin(node)  # Keep node alive
-    node.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':
