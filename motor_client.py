@@ -20,8 +20,8 @@ class MotorClient(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = MotorClient()
-    position = int(input("Enter desired motor position: "))
-    response = node.send_request(position)
+    pos = int(input("Enter motor position: "))
+    response = node.send_request(pos)
     node.get_logger().info(f'Result: {response.message}')
     node.destroy_node()
     rclpy.shutdown()
