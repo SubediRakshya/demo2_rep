@@ -2,59 +2,40 @@
 import rclpy
 from rclpy.node import Node
 from dynamixel_control.srv import SetPosition
-from dynamixel_sdk import PortHandler, PacketHandler
+from dynamixel_sdk import *  # Uses Dynamixel SDK library
 
+# Motor configuration
+DXL_ID = 1
+BAUDRATE = 57600
+DEVICENAME = '/dev/ttyUSB0'
 ADDR_TORQUE_ENABLE = 64
 ADDR_GOAL_POSITION = 116
 ADDR_PRESENT_POSITION = 132
 PROTOCOL_VERSION = 2.0
-DXL_ID = 1
-BAUDRATE = 57600
-DEVICENAME = '/dev/ttyUSB0'
-TORQUE_ENABLE = 1
-TORQUE_DISABLE = 0
-MOVING_STATUS_THRESHOLD = 20
 
 class MotorService(Node):
     def __init__(self):
         super().__init__('motor_service')
         self.srv = self.create_service(SetPosition, 'set_position', self.set_position_callback)
+        self.get_logger().info('Motor Service Ready.')
+
+        # Initialize Dynamixel SDK
         self.portHandler = PortHandler(DEVICENAME)
         self.packetHandler = PacketHandler(PROTOCOL_VERSION)
-
-        if not self.portHandler.openPort():
-            self.get_logger().error('Failed to open port')
-        if not self.portHandler.setBaudRate(BAUDRATE):
-            self.get_logger().error('Failed to set baudrate')
-
-        # Enable Torque
-        self.packetHandler.write1ByteTxRx(self.portHandler, DXL_ID, ADDR_TORQUE_ENABLE, TORQUE_ENABLE)
-        self.get_logger().info('Motor ready for commands.')
+        if self.portHandler.openPort() and self.portHandler.setBaudRate(BAUDRATE):
+            self.get_logger().info('Connected to Dynamixel motor.')
+            self.packetHandler.write1ByteTxRx(self.portHandler, DXL_ID, ADDR_TORQUE_ENABLE, 1)
+        else:
+            self.get_logger().error('Failed to connect to Dynamixel.')
 
     def set_position_callback(self, request, response):
-        goal = request.position
-        self.get_logger().info(f'Moving motor to position {goal}')
-
-        # Write target position
-        dxl_comm_result, dxl_error = self.packetHandler.write4ByteTxRx(
-            self.portHandler, DXL_ID, ADDR_GOAL_POSITION, goal
-        )
-
-        if dxl_comm_result != 0 or dxl_error != 0:
-            response.success = False
-            response.message = 'Failed to move motor'
-            return response
-
-        # Wait until goal reached
-        while True:
-            dxl_present_position, dxl_comm_result, dxl_error = self.packetHandler.read4ByteTxRx(
-                self.portHandler, DXL_ID, ADDR_PRESENT_POSITION
-            )
-            if abs(goal - dxl_present_position) <= MOVING_STATUS_THRESHOLD:
-                break
-
-        response.success = True
-        response.message = f'Motor moved to {goal}'
+        position = request.position
+        result, error = self.packetHandler.write4ByteTxRx(
+            self.portHandler, DXL_ID, ADDR_GOAL_POSITION, position)
+        if result == 0:
+            response.message = f'Motor moved to position {position}'
+        else:
+            response.message = f'Failed to move motor. Error: {error}'
         self.get_logger().info(response.message)
         return response
 
