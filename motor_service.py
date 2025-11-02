@@ -22,12 +22,27 @@ class MotorService(Node):
         # Initialize Dynamixel SDK
         self.portHandler = PortHandler(DEVICENAME)
         self.packetHandler = PacketHandler(PROTOCOL_VERSION)
-        if self.portHandler.openPort() and self.portHandler.setBaudRate(BAUDRATE):
-            self.get_logger().info('Connected to Dynamixel motor.')
-            self.packetHandler.write1ByteTxRx(self.portHandler, DXL_ID, ADDR_TORQUE_ENABLE, 1)
-        else:
-            self.get_logger().error('Failed to connect to Dynamixel.')
-
+		success_open = self.portHandler.openPort()
+		if success_open:
+			self.get_logger().info("port was opened")
+		else:
+			self.get_logger().error("failed to open port")
+			return
+		success_baud=self.portHandler.setBaudRate(BAUDRATE)
+		if success_baud:
+			self.get_logger().info("successfully set baudrate")
+		else
+			self.get_logger().info("failed to set baudrate")
+			return
+		self.get_logger().info("connected to dynamixel motor")
+		dxl_comm_result, dxl_error =self.packetHandler.write1ByteTxRx(
+			self.portHandler,DXL_ID, ADDR_TORQUE_ENABLE, 1
+			)
+		if dxl_comm_result !=COMM_SUCCESS :
+			self.get_logger.info("failed to enable torque")
+		else
+			self.get_logger.info("torque enabled")
+		
     def set_position_callback(self, request, response):
         position = request.position
         result, error = self.packetHandler.write4ByteTxRx(
