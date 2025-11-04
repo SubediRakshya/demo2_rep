@@ -1,0 +1,36 @@
+ros2 run vtt_control motor_subscriber
+[INFO] [1762298125.239357064] [motor_subscriber]: MotorSubscriber started
+[INFO] [1762298125.239502338] [motor_subscriber]: Starting motor setup
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/serial/serialposix.py", line 322, in open
+    self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyUSB0'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/rsubedi/dev_ws/install/vtt_control/lib/vtt_control/motor_subscriber", line 33, in <module>
+    sys.exit(load_entry_point('vtt-control==0.0.0', 'console_scripts', 'motor_subscriber')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsubedi/dev_ws/install/vtt_control/lib/python3.12/site-packages/vtt_control/motor_subscriber.py", line 109, in main
+    node = MotorSubscriber()
+           ^^^^^^^^^^^^^^^^^
+  File "/home/rsubedi/dev_ws/install/vtt_control/lib/python3.12/site-packages/vtt_control/motor_subscriber.py", line 42, in __init__
+    if self.portHandler.openPort():
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsubedi/dev_ws/install/dynamixel_sdk/lib/python3.12/site-packages/dynamixel_sdk/port_handler.py", line 44, in openPort
+    return self.setBaudRate(self.baudrate)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsubedi/dev_ws/install/dynamixel_sdk/lib/python3.12/site-packages/dynamixel_sdk/port_handler.py", line 68, in setBaudRate
+    return self.setupPort(baud)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/rsubedi/dev_ws/install/dynamixel_sdk/lib/python3.12/site-packages/dynamixel_sdk/port_handler.py", line 114, in setupPort
+    self.ser = serial.Serial(
+               ^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/serial/serialutil.py", line 244, in __init__
+    self.open()
+  File "/usr/lib/python3/dist-packages/serial/serialposix.py", line 325, in open
+    raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
+serial.serialutil.SerialException: [Errno 2] could not open port /dev/ttyUSB0: [Errno 2] No such file or directory: '/dev/ttyUSB0'
+[ros2run]: Process exited with failure 1
