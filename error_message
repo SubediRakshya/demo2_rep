@@ -1,36 +1,49 @@
-ros2 run vtt_control motor_subscriber
-[INFO] [1762298125.239357064] [motor_subscriber]: MotorSubscriber started
-[INFO] [1762298125.239502338] [motor_subscriber]: Starting motor setup
-Traceback (most recent call last):
-  File "/usr/lib/python3/dist-packages/serial/serialposix.py", line 322, in open
-    self.fd = os.open(self.portstr, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/dev/ttyUSB0'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/rsubedi/dev_ws/install/vtt_control/lib/vtt_control/motor_subscriber", line 33, in <module>
-    sys.exit(load_entry_point('vtt-control==0.0.0', 'console_scripts', 'motor_subscriber')())
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/rsubedi/dev_ws/install/vtt_control/lib/python3.12/site-packages/vtt_control/motor_subscriber.py", line 109, in main
-    node = MotorSubscriber()
-           ^^^^^^^^^^^^^^^^^
-  File "/home/rsubedi/dev_ws/install/vtt_control/lib/python3.12/site-packages/vtt_control/motor_subscriber.py", line 42, in __init__
-    if self.portHandler.openPort():
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/rsubedi/dev_ws/install/dynamixel_sdk/lib/python3.12/site-packages/dynamixel_sdk/port_handler.py", line 44, in openPort
-    return self.setBaudRate(self.baudrate)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/rsubedi/dev_ws/install/dynamixel_sdk/lib/python3.12/site-packages/dynamixel_sdk/port_handler.py", line 68, in setBaudRate
-    return self.setupPort(baud)
-           ^^^^^^^^^^^^^^^^^^^^
-  File "/home/rsubedi/dev_ws/install/dynamixel_sdk/lib/python3.12/site-packages/dynamixel_sdk/port_handler.py", line 114, in setupPort
-    self.ser = serial.Serial(
-               ^^^^^^^^^^^^^^
-  File "/usr/lib/python3/dist-packages/serial/serialutil.py", line 244, in __init__
-    self.open()
-  File "/usr/lib/python3/dist-packages/serial/serialposix.py", line 325, in open
-    raise SerialException(msg.errno, "could not open port {}: {}".format(self._port, msg))
-serial.serialutil.SerialException: [Errno 2] could not open port /dev/ttyUSB0: [Errno 2] No such file or directory: '/dev/ttyUSB0'
-[ros2run]: Process exited with failure 1
+[vtt_estimator-3]   File "/home/rspi/devl_ws/install/vtt_robot/lib/vtt_robot/vtt_estimator", line 33, in <module>
+[vtt_estimator-3]     sys.exit(load_entry_point('vtt-robot==0.0.0', 'console_scripts', 'vtt_estimator')())
+[vtt_estimator-3]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[vtt_estimator-3]   File "/home/rspi/devl_ws/install/vtt_robot/lib/vtt_robot/vtt_estimator", line 25, in importlib_load_entry_point
+[vtt_estimator-3]     return next(matches).load()
+[vtt_estimator-3]            ^^^^^^^^^^^^^^^^^^^^
+[vtt_estimator-3]   File "/usr/lib/python3.12/importlib/metadata/__init__.py", line 205, in load
+[vtt_estimator-3]     module = import_module(match.group('module'))
+[vtt_estimator-3]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[vtt_estimator-3]   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+[vtt_estimator-3]     return _bootstrap._gcd_import(name[level:], package, level)
+[vtt_estimator-3]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[vtt_estimator-3]   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+[vtt_estimator-3]   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+[vtt_estimator-3]   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+[vtt_estimator-3]   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+[vtt_estimator-3]   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+[vtt_estimator-3]   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+[vtt_estimator-3]   File "/home/rspi/devl_ws/install/vtt_robot/lib/python3.12/site-packages/vtt_robot/vtt_estimator_node.py", line 6, in <module>
+[vtt_estimator-3]     from vtt_robot.gravity_model import drop_to_ground
+[vtt_estimator-3]   File "/home/rspi/devl_ws/install/vtt_robot/lib/python3.12/site-packages/vtt_robot/gravity_model.py", line 3, in <module>
+[vtt_estimator-3]     from transforms3d.quaternions import axangle2quat, rotate_vector
+[vtt_estimator-3] ModuleNotFoundError: No module named 'transforms3d'
+[vtt_simulator-2] Traceback (most recent call last):
+[vtt_simulator-2]   File "/home/rspi/devl_ws/install/vtt_robot/lib/vtt_robot/vtt_simulator", line 33, in <module>
+[vtt_simulator-2]     sys.exit(load_entry_point('vtt-robot==0.0.0', 'console_scripts', 'vtt_simulator')())
+[vtt_simulator-2]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[vtt_simulator-2]   File "/home/rspi/devl_ws/install/vtt_robot/lib/vtt_robot/vtt_simulator", line 25, in importlib_load_entry_point
+[vtt_simulator-2]     return next(matches).load()
+[vtt_simulator-2]            ^^^^^^^^^^^^^^^^^^^^
+[vtt_simulator-2]   File "/usr/lib/python3.12/importlib/metadata/__init__.py", line 205, in load
+[vtt_simulator-2]     module = import_module(match.group('module'))
+[vtt_simulator-2]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[vtt_simulator-2]   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+[vtt_simulator-2]     return _bootstrap._gcd_import(name[level:], package, level)
+[vtt_simulator-2]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[vtt_simulator-2]   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+[vtt_simulator-2]   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+[vtt_simulator-2]   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+[vtt_simulator-2]   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+[vtt_simulator-2]   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+[vtt_simulator-2]   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+[vtt_simulator-2]   File "/home/rspi/devl_ws/install/vtt_robot/lib/python3.12/site-packages/vtt_robot/vtt_sim_node.py", line 7, in <module>
+[vtt_simulator-2]     from vtt_robot.gravity_model import drop_to_ground
+[vtt_simulator-2]   File "/home/rspi/devl_ws/install/vtt_robot/lib/python3.12/site-packages/vtt_robot/gravity_model.py", line 3, in <module>
+[vtt_simulator-2]     from transforms3d.quaternions import axangle2quat, rotate_vector
+[vtt_simulator-2] ModuleNotFoundError: No module named 'transforms3d'
+[ERROR] [vtt_estimator-3]: process has died [pid 7231, exit code 1, cmd '/home/rspi/devl_ws/install/vtt_robot/lib/vtt_robot/vtt_estimator --ros-args'].
+[ERROR] [vtt_simulator-2]: process has died [pid 7230, exit code 1, cmd '/home/rspi/devl_ws/install/vtt_robot/lib/vtt_robot/vtt_simulator --ros-args'].
